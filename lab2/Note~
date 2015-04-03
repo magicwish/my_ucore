@@ -1,0 +1,93 @@
+Lab2 Report
+[练习1]first-fit算法
+default_init_memmap
+	1 初始化页块中的页记录
+	2 freelist按地址排序，将页块插入freelist中。
+default_alloc_pages
+	找到第一个比需求大的空闲页块。
+	若大小不正好相同，则将后半块重新当作空闲块插入freelist中。
+default_free_pages
+	1 维护页块中的页记录
+	2 找是否有空闲块后面紧邻该页块，如果有，被该页块吃掉，并删除。
+	3 找是否有空闲块前面紧邻该页块，如果有，被该页块吃掉，并删除。
+	4 将该页块插入freelist中。
+
+[练习2]寻找虚拟地址对应页表项
+1 PDE PTE 组成部分的含义
+	控制位有present、writable、user accessable位。
+	present:表示是否存在PT/对应物理页。
+	writable:能否对该页内容进行修改。
+	user accessable:用户能否访问该页。
+2 页访问异常：
+	
+	 
+
+Some Notes:
+第一阶段：bootloader
+	未开启页机制；对等段映射（同lab1)。vaddr = laddr = paddr
+第二阶段：entry.S ~ enable_paging()之前
+	未开启页机制；vaddr-0xC0000000 = laddr = paddr
+	在entry.S的开头改变。
+	kernel生成的elf要的入口为0xC01000000v,这个是虚拟地址（可以想成这是一个普通程序，现在有段映射机制，要加载这个程序）。
+	按道理bootloader应把它加载到0xC0100000p（对等段映射），但它用了trick，将其加载到0x100000p(&0xFFFFFF)
+	接下来kernel首先要更新段映射（否则kernel无法运行了），由entry.S完成。
+	Note: 
+		lgdt REALLOC(__gdtdesc);
+		......
+		__gdtdesc:
+    		.word 0x17
+    		.long REALLOC(__gdt)
+		1 这里将内存中的值-KERNELBASE，因为kernel编译时用的是虚拟地址，而存的值得是物理地址。
+		2 getdesc idtdesc cr0等标识表起始地址的控制寄存用的都是物理地址（不管段页机制，因为这是给硬件用的）。
+
+第三阶段：enable_paging() ~ gdt_init()之前
+	开启页机制；vaddr - 2*0xC0000000 = laddr - 0xC0000000 = paddr (>4M)
+			  vaddr - 0xC0000000 = laddr = paddr (0 ~ 4M)
+	在enable_paging()之前的几句话，设置了页表内容，enable_paging()启动页机制。
+	4M内页机制为对等映射，保证ucore在这个阶段可以正常运行（地址转换correct）。
+Physical memory:
+	MENSIZE--------------------------------------0x38000000
+			|									|
+			|		PDE and PTE placed here		|
+			|									|
+			-------------------------------------
+			|		physical page records		|
+			------------------------------------<0x00400000
+			|				ucore				|
+			-------------------------------------0x00100000
+			|		bootloader and others		|
+			-------------------------------------0x00000000
+		physical address 0x00000000 ~ 0x38000000 or linear address 0xC0000000~0xF8000000 is mapped.
+PDE:
+			--------------------------------------
+		0~4M|	same as KERNBASE~KERNBASE+4M	|
+			|				0~4M				|
+			--------------------------------------
+			|				....				|
+			--------------------------------------
+KERNBASE ~	|									|
+KERNBASE+4M	|									|
+			--------------------------------------
+			|									|
+			|		all: -KERNBASE				|
+			|	（段页机制完全完成后要用的也就是这块）	|
+KERNBASE+	|									|
+MEMSIZE	------------------------------------------
+			|				....				|
+			-------------------------------------
+
+第四阶段：gdt_init()及之后
+	vaddr = laddr = paddr + 0xC0000000
+	gdt_init()修改了段映射，并将PDE的第一条（映射0~4M）清零。
+
+*凡是存在内存中的值都是物理地址，代码中的&引用都是虚拟地址。
+	ucore加载到虚拟空间中；相关控制寄存器和pde pte中的值都要是物理地址。
+
+page_alloc() & free_page() 管理物理页。
+page_insert() & page_reomve()为添加/解除linear page和phyical page的关系。
+	insert前要先allocate物理页，remove时发现physical page没人用了要free.
+	PT起初没有，用的时候allocate一页物理页给PT,同时该物理页ref=1。
+	映射可以映射PT、PD（ref基准为1,解除映射时不会free物理页）、reserved pages(reserved, 不会被free掉）。
+
+
+

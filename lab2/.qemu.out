@@ -1,0 +1,72 @@
+(THU.CST) os is loading ...
+
+Special kernel symbols:
+  entry  0xc010002a (phys)
+  etext  0xc010617e (phys)
+  edata  0xc0117a56 (phys)
+  end    0xc01189e8 (phys)
+Kernel executable memory footprint: 99KB
+Hello world
+ebp:0xc0116f38 eip:0xc01009dc arg1:0x00010094 arg2:0x00000000 arg3:0xc0116f68 arg4:0xc01000bc     kern/debug/kdebug.c:298: print_stackframe+33
+
+ebp:0xc0116f48 eip:0xc0100cc4 arg1:0x00000000 arg2:0x00000000 arg3:0x00000000 arg4:0xc0116fb8     kern/debug/kmonitor.c:129: mon_backtrace+10
+
+ebp:0xc0116f68 eip:0xc01000bc arg1:0x00000000 arg2:0xc0116f90 arg3:0xffff0000 arg4:0xc0116f94     kern/init/init.c:49: grade_backtrace2+33
+
+ebp:0xc0116f88 eip:0xc01000e5 arg1:0x00000000 arg2:0xffff0000 arg3:0xc0116fb4 arg4:0x00000029     kern/init/init.c:54: grade_backtrace1+38
+
+ebp:0xc0116fa8 eip:0xc0100103 arg1:0x00000000 arg2:0xc010002a arg3:0xffff0000 arg4:0x0000001d     kern/init/init.c:59: grade_backtrace0+23
+
+ebp:0xc0116fc8 eip:0xc0100128 arg1:0xc010619c arg2:0xc0106180 arg3:0x00000f92 arg4:0x00000000     kern/init/init.c:64: grade_backtrace+34
+
+ebp:0xc0116ff8 eip:0xc010007f arg1:0x00000000 arg2:0x00000000 arg3:0x0000ffff arg4:0x40cf9a00     kern/init/init.c:29: kern_init+84
+
+memory management: default_pmm_manager
+e820map:
+  memory: 0009fc00, [00000000, 0009fbff], type = 1.
+  memory: 00000400, [0009fc00, 0009ffff], type = 2.
+  memory: 00010000, [000f0000, 000fffff], type = 2.
+  memory: 07efe000, [00100000, 07ffdfff], type = 1.
+  memory: 00002000, [07ffe000, 07ffffff], type = 2.
+  memory: 00040000, [fffc0000, ffffffff], type = 2.
+check_alloc_page() succeeded!
+check_pgdir() succeeded!
+check_boot_pgdir() succeeded!
+-------------------- BEGIN --------------------
+PDE(0e0) c0000000-f8000000 38000000 urw
+  |-- PTE(38000) c0000000-f8000000 38000000 -rw
+PDE(001) fac00000-fb000000 00400000 -rw
+  |-- PTE(000e0) faf00000-fafe0000 000e0000 urw
+  |-- PTE(00001) fafeb000-fafec000 00001000 -rw
+--------------------- END ---------------------
+++ setup timer interrupts
+100 ticks
+200 ticks
+300 ticks
+400 ticks
+500 ticks
+600 ticks
+700 ticks
+800 ticks
+900 ticks
+1000 ticks
+1100 ticks
+1200 ticks
+1300 ticks
+1400 ticks
+1500 ticks
+1600 ticks
+1700 ticks
+1800 ticks
+1900 ticks
+2000 ticks
+2100 ticks
+2200 ticks
+2300 ticks
+2400 ticks
+2500 ticks
+2600 ticks
+2700 ticks
+2800 ticks
+2900 ticks
+3000 ticks
