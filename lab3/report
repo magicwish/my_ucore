@@ -1,0 +1,29 @@
+Lab3 Report
+
+[练习1]给未映射上的地址映射上物理页
+0 已给出代码已经处理了访问非法虚拟地址和访问权限不够的问题，之后只需处理页不存在的情况。
+1 获取pt entry.
+2 若pt entry为空，表明该PT entry不存在，新建物理页同时建立映射。
+3 若不为空，表明present位为0,物理页不在内存中，swap in并更新映射关系。
+
+[练习2]
+1 _fifo_map_swappable:
+	将换入的物理页添加到队末。
+2 _fifo_swap_out_victim:
+	弹出队首的物理页并返回该物理页。
+
+
+Question:
+1 这里的swap机制假设了每个物理页只有一个虚拟页对应，见swap.c的swap_out函数。
+2 在do_pgdefault函数中，当出现memory不够用的情况，并没有调用swap_out，继续跟踪至中断处理完也未发现调用，何时调出页面？
+  在do_pgdefault中在该swap_in时swap_in。在swap_in或新建虚拟页的时候调用swappable添加标记。
+  在alloc_pages()每次分配物理页面时，发现空间不够时调用swap_out。
+  在check_pgdefault中没有限制物理空间，使得测试时根本没有出现page fault！
+3 页的权限：是由vma还是页表控制的？
+	页表控制：因为产生页访问异常（包括权限不匹配）是由硬件产生的。
+	vma控制：在do_pgdefault前半段判断是什么东西？
+
+Note:
+mm(对应一个PD，即一个进程）-->swap_manager
+					   -->vma(虚拟页链表）
+do_pgdefault中：swap_manager负责对物理页的选择；page_insert, page_remove等函数负责更新页表。 
