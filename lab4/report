@@ -1,0 +1,75 @@
+Lab4 Report
+
+Some Note:
+*******用户进程/内核线程*************
+内核栈就是进程在内核态运行时所用的栈。
+所以用户进程有代码段/用户栈/内核栈，而内核线程只有代码段/内核栈。
+用户进程的用户栈和内核栈是分开的。
+不同用户进程的代码段/用户栈/内核栈是分开的。无论是用户进程还是内核线程，他们都有自己的一个内核栈。
+ucore中，内核线程共享代码段（不同线程eip指向不同的代码），但内核栈是分开的，其中idleprocess用的是bootstack。所以称为内核线程（共享代码段，独立堆栈，独立线程控制块）
+每个用户进程有自己的页表，页表中包含user entry和kernel entry，不同的用户进程user entry不同，但kernel entry相同。
+kernel entry部分覆盖内存的kernel段，因此用户进程进入内核态时（中断）不需要换页表，同时它能够访问（但kernel中的代码防止了）其他内核栈或其他内核代码。
+内核线程就共用一个页表（因为代码/栈只在内核段）。
+中断发生时，用户进程由硬件转到相应内核栈，内核进程直接继续使用自己的内核栈。操作为:push“环境”->执行中断服务->pop“环境”。
+发生切换时（即中断服务包含切换），相当于在当中切一刀（具体在switch_to）：切换用context保存“环境”（eip,esp,寄存器），eip为switch_to的返回地址，esp指向该return address。
+**********************************
+
+[练习1]分配并初始化一个进程控制块
+标识信息：
+	pid = -1
+	name = “”
+控制信息：
+	parent = NULL
+	state = PROC_UNINIT
+	runs = 0
+	need_resched = 0
+	flags = 0
+存储信息：
+	kstack = NULL
+	mm = NULL
+	cr3 = boot_cr3
+现场信息：
+	context：empty
+	tf:NULL
+其中context用来保存被切换进程在切换点的上下文（包括eip,esp,通用寄存器）
+trapframe放在新建进程的内核栈中伪装了中断所要装入的数据，便于第一次切换到该进程时能正常跳出中断开始执行。（？）
+进程切换保存的东西有：
+	context：中断程序所使用的eip,esp,通用寄存器。
+	进入中断时：正常执行所使用的eip,cs,esp，ss,通用寄存器。（也是trapframe要伪装的）。
+	proc_run（中断程序的一部分）：装入新进程的cr3,tss
+
+
+[练习2]为新创建的内核线程分配资源
+有以下这些步骤：
+1 alloc_proc：给线程控制块分配内存
+2 设置parent
+3 setup_kstack:分配内核栈
+4 copy_mm:复制内存
+5 copy_thread:设置线程控制块初始的context,tf，给系统第一次切换到该进程时使用。
+6 给进程分配pid
+7 将控制块加入proc_list和hash_list
+8 wakeup_proc:设state为RUNNABLE
+
+*local_intr_save 和 local intr_resotre可以让夹在其中的代码屏蔽中断。
+
+[练习3]理解proc_run函数和它调用的函数如何完成进程切换。
+proc_run：
+	装入新进程的cr3,tss
+	调用switch_to.
+switch_to:
+栈分布：
+刚进函数：						save from结束：					restore to结束：
+		to->context						to->context						to->context
+		from->context			esp->	from->context					from->context
+esp->	return addr of switch	（这里是from的内核栈）				esp->	return addr of switch
+		(这里是from的内核栈）												（这里是to的内核栈）
+save和restore分别将esp,eip,通用寄存器存入context/从context取出。
+切的”一刀“就切在save from结束。
+
+这里init_proc因为没有运行过，在切换时过程有些不同。
+首先是在kernel_thread里初始化了context.eip = forkret context.esp = proc->tf,trapframe的eip设为kernel_thread_entry,并将自己设置的trapframe先放到init_proc的内核栈中。
+switch_to在restore后，其实跳到了forkret,esp也指向trapframe。
+forkret函数其实模拟了一个中断退出(kernel_thread_entry是被中断的程序)，恢复了各寄存器，跳转到了kernel_thread_entry.
+kernel_thread_entry 是一个”壳子“，运行真正的进程程序。
+
+
