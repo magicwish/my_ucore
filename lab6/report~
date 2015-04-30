@@ -1,0 +1,41 @@
+Lab6 report
+
+Some Note:
+1.lab4&lab5中idleproc作为空闲进程，不断地在schedule，这样不合理。
+  最好idleproc只是一个死循环，在没有其他进程时调用该进程，将schedule和idleproc分开。
+
+2.lab4&lab5的schedule：直接在proc_list找runnable,去掉current.
+  lab6的schedule：维护runnable列表（不包括running）
+
+3.switch时机：
+	process waits:do_wait中修改PCB状态后schedule
+	process exits:do_exit末尾schedule
+	use up time slice:trap函数末尾schedule
+	new process joins ready queue:
+
+4.用户进程可抢占：在任何时间点
+  内核线程一般不可抢占
+  见trap完成trap_dispatch后，会根据情况对用户进程schedule(这里体现了任何时间点，每次时钟中断都有可能),但不会对内核线程schedule.
+  ？？如果ucore内核线程可抢占，那就要实现ucore所有全局变量的互斥访问？？
+
+5.scheduler：
+  通过实现sched_class_enqueue,sched_class_dequeue,sched_class_pick_next,sched_class_proc_tick这四个接口实现与具体算法的无关性。
+  分别表示添加进程进队列、从队列取出进程、选择一个进程、更新队列。
+  schedule：enqueue（当前进程为RUNNING），pick_next，dequeue；	wakeup:enqueue；	每次time interrupt=>run_time_list:proc_tick
+
+6.timer
+  计时器：每个计时器绑定一个进程，到指定时间唤醒该进程。
+  Note:timer_list按进程的唤醒时间顺序排列，每个在timer_list的timer的expire_time为该进程与上个进程的唤醒时间之差。
+
+[练习1]使用RR调度算法
+首先是调度的时间点，见Note3。
+调度器维护一个runnable queue.但外部请求时（pick_next)返回被选中的进程，它使用了算法无关的框架，定义了几个基本操作，见Note5.
+操作系统在一些地方调用这些接口，完成选进程和更新队列，见Note5.
+RR算法：
+enqueue,dequeue,pick_next采用的是先进先出原则。进来的进程如果要运行时间（proc->time_slice）比设定的时间片长度长（rq->max_time_slice），则设为时间片长度，这样可以强制在进程在用完时间片后reschedule
+proc_tick会在每次时钟中断时被调用，减少当前进程的剩余时间片，发现时间片用完时，置need_resched为1.
+
+[练习2]实现stride scheduling调度算法
+stride scheduling实际上是增强版RR算法，RR算法在时间片结束后采用FCFS，stride scheduling则在时间片结束后取stride最小的进程.RR算法每个进程平均的获得时间片，stride中进程获得的时间片与优先级成正比。因此init,enqueue,dequeue,proc_tick与RR的实现一样，只要修改pick_next。
+**priority.c的测试有问题：实际上在运行时间太短时，运行时间的比例和优先级的比例是有一定的偏差的。比如优先级为1,5的两个线程，但1运行3次时，5可能运行11~15次。priority.c中所跑得时间就太短了，所以测试结果不对。
+
