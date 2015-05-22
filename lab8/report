@@ -1,0 +1,16 @@
+Lab8 Report
+
+[练习1]完成读文件操作的实现
+函数中首先排除非法情况，计算出要读取的block的begin和end，设置好sfs_buf_op和sfs_block_op。
+主要使用sfs_bmap_load_nolock判断是否可读写，使用sfs_buf_op读写不完整的块，使用sfs_block_op读写完整的块。
+读写时对于始末，要判断是否占满了一个块，如果不是要专门处理一下。
+
+[练习2]完成基于文件系统的执行程序机制实现
+load_icode主要步骤为：
+1新建mm
+2新建mm相关联的PDT
+3将TEXT/DATA/BSS段从磁盘中加载到内存
+4设置用户栈
+5设置uargc,uargv
+6设置trapframe
+其中第三步步骤要用到文件读取操作，使用load_icode_read函数。
